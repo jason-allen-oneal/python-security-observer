@@ -1,7 +1,7 @@
 # python-security-observer
 This program will submit a scan to Mozilla's HTTP Security Observatory and await the results.
 
-__INSTALLATION__
+__INSTALLATION__  
 `pip3 install -r requirements.txt`  
 
 ```
