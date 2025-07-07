@@ -8,7 +8,7 @@ from utils import Utils
 class Scanner:
     def __init__(self, options):
         self.options = options
-        self.base = 'https://http-observatory.security.mozilla.org/api/v1/'
+        self.base = 'https://observatory-api.mdn.mozilla.net/api/v2/'
         self.start = time.time()
         self.end = None
         self.scan_id = None
@@ -29,10 +29,10 @@ class Scanner:
             return response.json()
         except HTTPError as http_err:
             self.utils.msg(f'HTTP error occurred: {http_err}', 'error')
-            exit(1)
+            raise
         except Exception as err:
             self.utils.msg(f'Other error occurred: {err}', 'error')
-            exit(1)
+            raise
 
     def make_get(self, action, params):
         try:
@@ -44,10 +44,10 @@ class Scanner:
             return response.json()
         except HTTPError as http_err:
             self.utils.msg(f'HTTP error occurred: {http_err}', 'error')
-            exit(1)
+            raise
         except Exception as err:
             self.utils.msg(f'Other error occurred: {err}', 'error')
-            exit(1)
+            raise
 
     def begin(self):
         result = self.make_post('analyze', {'hidden': 'true', 'rescan': 'true'})
@@ -61,10 +61,19 @@ class Scanner:
                 self.utils.countdown(int(3*60), self.rescan)
             else:
                 self.utils.msg(err, 'error')
-                exit(1)
+                raise Exception(err)
         else:
-            self.state = result['state']
-            self.scan_id = result['scan_id']
+            # Check if scan is already complete
+            if 'scan' in result and result['scan'] and result['scan'].get('error') is None:
+                # Scan is complete, extract results
+                self.scan_id = result['scan']['id']
+                self.scan_result = result['tests']
+                self.running = False
+                self.end = time.time()
+            else:
+                # Scan is in progress, extract state and scan_id
+                self.state = result.get('state', 'UNKNOWN')
+                self.scan_id = result.get('scan_id')
 
     def check_results(self):
         self.status_result = self.make_get('analyze', {'host': self.options.target})

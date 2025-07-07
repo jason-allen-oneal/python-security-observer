@@ -1,2 +1,4 @@
 rich
 colorama
+requests
+PySide6
